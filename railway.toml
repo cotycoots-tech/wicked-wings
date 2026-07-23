@@ -1,8 +1,9 @@
-# Railway config — forces the stdlib Python server (not Node via package.json)
+# Railway config — Docker + stdlib Python server
 # Docs: https://docs.railway.com/config-as-code/reference
 
 [build]
-builder = "RAILPACK"
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
 
 [deploy]
 startCommand = "python server/app.py"
