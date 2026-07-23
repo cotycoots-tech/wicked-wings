@@ -99,9 +99,9 @@ railway domain        # generate a public domain
 
 | File | Role |
 |------|------|
-| `railway.toml` | Start command + healthcheck (`/health`) |
-| `requirements.txt` | Marks the service as Python (no pip deps) |
-| `runtime.txt` | Preferred Python version hint |
+| `Dockerfile` | Python 3.12 image used by Railway builds |
+| `railway.toml` | Builder, start command, healthcheck (`/health`) |
+| `requirements.txt` | No pip deps (stdlib only); kept for tooling |
 | `server/app.py` | API + static file server |
 | `public/` | Frontend |
 | `data/db.json` | Seeded on first boot if missing |
