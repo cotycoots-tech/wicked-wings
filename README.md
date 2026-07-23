@@ -70,29 +70,31 @@ data/db.json      Persistent store (auto-created)
 | `HOST` | Bind address | `0.0.0.0` |
 | `COOKIE_SECURE` | Force `Secure` session cookies (`true`/`1`) | auto on Railway |
 
-## Deploy on Railway
+## Deploy on Railway (recommended path)
 
-This app is configured for [Railway](https://railway.app) via `railway.toml` (Python stdlib server).
+Configured via `Dockerfile` + `railway.toml`. Production service is connected to **GitHub** (`cotycoots-tech/wicked-wings` → `main`).
 
-### One-time setup (dashboard)
+### One-time setup
 
-1. Push this repo to GitHub (if it is not already).
-2. Go to [railway.app/new](https://railway.app/new) → **Deploy from GitHub repo** → select this project.
-3. Railway will build with Railpack and start with:
-   ```
-   python server/app.py
-   ```
-4. Open the service → **Settings** → **Networking** → **Generate Domain**.
-5. Visit the public URL (HTTPS). Log in with a demo account above.
+1. **Push to GitHub** — repo at https://github.com/cotycoots-tech/wicked-wings
+2. **Railway → Deploy from GitHub** — service source: `cotycoots-tech/wicked-wings` branch `main`
+3. **Generate domain** — e.g. `https://vision-cell-builder-production.up.railway.app`
+4. **Done** — each push to `main` rebuilds and deploys automatically
 
-### CLI alternative
+```bash
+git push origin main   # triggers Railway deploy
+```
+
+### CLI alternative (optional)
 
 ```bash
 # Install: https://docs.railway.com/guides/cli
 railway login
-railway init          # link or create a project
-railway up            # deploy from the current directory
-railway domain        # generate a public domain
+railway init
+railway up
+railway domain
+# Link existing service to GitHub:
+railway service source connect --repo cotycoots-tech/wicked-wings --branch main
 ```
 
 ### What gets deployed
