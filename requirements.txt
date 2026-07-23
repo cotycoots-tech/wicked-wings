@@ -1,0 +1,2 @@
+# No third-party packages — server/app.py uses Python 3 stdlib only.
+# This file exists so Railway/Railpack detects a Python app.

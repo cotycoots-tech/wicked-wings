@@ -25,7 +25,13 @@ DB_PATH = DATA_DIR / "db.json"
 COOKIE_NAME = "vcb_session"
 SESSION_TTL = 24 * 60 * 60
 PORT = int(os.environ.get("PORT", "3847"))
+# 0.0.0.0 so Railway (and other hosts) can route external traffic
+HOST = os.environ.get("HOST", "0.0.0.0")
 PBKDF2_ITERS = 120_000
+# Secure cookies when behind HTTPS (Railway sets RAILWAY_* vars)
+_COOKIE_SECURE = os.environ.get("COOKIE_SECURE", "").lower() in ("1", "true", "yes") or bool(
+    os.environ.get("RAILWAY_ENVIRONMENT") or os.environ.get("RAILWAY_PUBLIC_DOMAIN")
+)
 
 _lock = threading.RLock()
 
@@ -612,7 +618,7 @@ class Handler(BaseHTTPRequestHandler):
             path = parsed.path
             qs = parse_qs(parsed.query)
 
-            if path.startswith("/api/"):
+            if path in ("/health", "/api/health") or path.startswith("/api/"):
                 return self._route_api("GET", path, qs, None)
 
             # Static files
@@ -656,6 +662,10 @@ class Handler(BaseHTTPRequestHandler):
     def _route_api(self, method: str, path: str, qs: dict, body: Optional[dict]) -> None:
         body = body or {}
 
+        # Health (no auth — used by Railway healthchecks)
+        if method == "GET" and path in ("/api/health", "/health"):
+            return self._json(200, {"ok": True, "service": "vision-cell-builder"})
+
         # Auth routes
         if method == "GET" and path == "/api/me":
             user = get_session_user(self._cookie_token())
@@ -679,7 +689,10 @@ class Handler(BaseHTTPRequestHandler):
             expires = time.time() + SESSION_TTL
             db["sessions"][token] = {"userId": user["id"], "expiresAt": expires}
             write_db(db)
-            cookie = f"{COOKIE_NAME}={token}; Path=/; HttpOnly; SameSite=Lax; Max-Age={SESSION_TTL}"
+            cookie = (
+                f"{COOKIE_NAME}={token}; Path=/; HttpOnly; SameSite=Lax; "
+                f"Max-Age={SESSION_TTL}{'; Secure' if _COOKIE_SECURE else ''}"
+            )
             return self._json(200, {"user": sanitize_user(user)}, {"Set-Cookie": cookie})
 
         if method == "POST" and path == "/api/logout":
@@ -688,7 +701,10 @@ class Handler(BaseHTTPRequestHandler):
                 db = read_db()
                 db["sessions"].pop(token, None)
                 write_db(db)
-            cookie = f"{COOKIE_NAME}=; Path=/; HttpOnly; Max-Age=0"
+            cookie = (
+                f"{COOKIE_NAME}=; Path=/; HttpOnly; Max-Age=0"
+                f"{'; Secure' if _COOKIE_SECURE else ''}"
+            )
             return self._json(200, {"ok": True}, {"Set-Cookie": cookie})
 
         if method == "POST" and path == "/api/change-password":
@@ -1237,8 +1253,8 @@ def main() -> None:
     if not db.get("users"):
         seed_database()
 
-    server = ThreadingHTTPServer(("127.0.0.1", PORT), Handler)
-    print(f"Vision Cell Builder running at http://localhost:{PORT}")
+    server = ThreadingHTTPServer((HOST, PORT), Handler)
+    print(f"Vision Cell Builder running at http://{HOST}:{PORT}")
     print("Demo logins: admin/admin123  engineer/engineer123  viewer/viewer123")
     try:
         server.serve_forever()
