@@ -106,8 +106,18 @@ railway domain        # generate a public domain
 | `public/` | Frontend |
 | `data/db.json` | Seeded on first boot if missing |
 
-### Data persistence note
+### Data persistence (Railway volume)
 
-`data/db.json` lives on the container filesystem. **Redeploys can wipe local data** unless you attach a [Railway volume](https://docs.railway.com/reference/volumes) mounted at `/app/data` (or the service’s working-directory `data` path).
+Production attaches a [Railway volume](https://docs.railway.com/reference/volumes) at **`/app/data`** so `data/db.json` survives redeploys.
 
-For a durable store later, move to Postgres or another managed database.
+```bash
+# Create / re-check (already done for vision-cell-builder)
+railway volume -s <service-id> add -m /app/data
+railway volume list
+```
+
+- Empty volume on first boot: the app **auto-seeds** demo users and catalog data.
+- Image-baked `COPY data` is hidden when the volume is mounted (expected).
+- Volume size default is 500 MB (enough for JSON).
+
+For multi-instance or heavier durability later, move to Postgres or another managed database.
